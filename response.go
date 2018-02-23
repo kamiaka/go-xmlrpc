@@ -31,10 +31,24 @@ func NewResponse(val *Value) Response {
 	}
 }
 
+// FaultResponse represents Fault
+func FaultResponse(code int, str string) Response {
+	f := &Fault{
+		code: code,
+		str:  str,
+	}
+	return &response{
+		Fault: f.Value(),
+	}
+}
+
 func (r *response) Value() (*Value, error) {
 	if r.Fault != nil {
 		f := r.Fault.Struct()
-		return nil, NewFault(f["faultCode"].(int), f["faultString"].(string))
+		return nil, &Fault{
+			code: f["faultCode"].(int),
+			str:  f["faultString"].(string),
+		}
 	}
 	if r.Param == nil {
 		return nil, nil
@@ -53,14 +67,6 @@ func (r *response) Write(w io.Writer) error {
 type Fault struct {
 	code int
 	str  string
-}
-
-// NewFault ,,,
-func NewFault(code int, str string) *Fault {
-	return &Fault{
-		code: code,
-		str:  str,
-	}
 }
 
 func (f *Fault) Code() int {
