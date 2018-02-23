@@ -96,3 +96,30 @@ func TestNewResponse(t *testing.T) {
 		}
 	}
 }
+
+func TestFaultResponse(t *testing.T) {
+	cases := []struct {
+		code int
+		str  string
+		want []byte
+	}{
+		{
+			code: 4,
+			str:  "Too many parameters.",
+			want: []byte(`<?xml version="1.0"?><methodResponse><fault><value><struct><member><name>faultCode</name><value><int>4</int></value></member><member><name>faultString</name><value><string>Too many parameters.</string></value></member></struct></value></fault></methodResponse>`),
+		},
+	}
+
+	for i, tc := range cases {
+		resp := FaultResponse(tc.code, tc.str)
+		buf := new(bytes.Buffer)
+		err := resp.Write(buf)
+		if err != nil {
+			t.Fatalf("#%d: FaultResponse(%+v, %+v).Write(buf) returns error: %s", i, tc.code, tc.str, err)
+		}
+		got := buf.Bytes()
+		if !bytes.Equal(got, tc.want) {
+			t.Errorf("#%d: FaultResponse(%+v, %+v).Write() == %s, want: %s", i, tc.code, tc.str, got, tc.want)
+		}
+	}
+}
