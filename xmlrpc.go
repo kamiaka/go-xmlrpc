@@ -2,17 +2,16 @@ package xmlrpc
 
 import (
 	"bytes"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 )
 
+// Client ...
 type Client interface {
-	Call(method string, args ...*Value) ([]Value, error)
+	Call(method string, args ...*Value) (*Value, error)
 }
 
 // Call XMLRPC
-func Call(url, method string, args ...*Value) ([]Value, error) {
+func Call(url, method string, args ...*Value) (*Value, error) {
 	return call(httpClient, url, method, args)
 }
 
@@ -22,17 +21,18 @@ type client struct {
 	url string
 }
 
+// NewClient ...
 func NewClient(url string) Client {
 	return &client{
 		url: url,
 	}
 }
 
-func (c *client) Call(method string, args ...*Value) ([]Value, error) {
+func (c *client) Call(method string, args ...*Value) (*Value, error) {
 	return call(httpClient, c.url, method, args)
 }
 
-func call(client *http.Client, url, method string, args []*Value) ([]Value, error) {
+func call(client *http.Client, url, method string, args []*Value) (*Value, error) {
 	req, err := NewRequest(method, args...)
 	if err != nil {
 		return nil, err
@@ -49,8 +49,5 @@ func call(client *http.Client, url, method string, args []*Value) ([]Value, erro
 		return nil, err
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	fmt.Printf("resp: %s, err: %s\n", body, err)
-
-	return nil, nil
+	return ParseResponse(resp.Body)
 }

@@ -44,10 +44,9 @@ func FaultResponse(code int, str string) Response {
 
 func (r *response) Value() (*Value, error) {
 	if r.Fault != nil {
-		f := r.Fault.Struct()
 		return nil, &Fault{
-			code: f["faultCode"].(int),
-			str:  f["faultString"].(string),
+			code: r.Fault.FieldByName("faultCode").Int(),
+			str:  r.Fault.FieldByName("faultString").String(),
 		}
 	}
 	if r.Param == nil {

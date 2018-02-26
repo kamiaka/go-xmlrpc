@@ -11,12 +11,13 @@ type param struct {
 // Value ...
 type Value struct {
 	ArrayPtr  *[]*Value  `xml:"array>data>value,omitempty"`
-	BoolPtr   *bool      `xml:"boolean,omitempty"`
+	BoolPtr   *int       `xml:"boolean,omitempty"`
 	IntPtr    *int       `xml:"int,omitempty"`
 	StringPtr *string    `xml:"string,omitempty"`
 	StructPtr *structVal `xml:"struct,omitempty"`
 }
 
+// StructMember ...
 type StructMember struct {
 	Name  string `xml:"name"`
 	Value *Value `xml:"value"`
@@ -26,28 +27,35 @@ type structVal struct {
 	Members []*StructMember `xml:"member"`
 }
 
+// Type ...
+func (v *Value) Type() Type {
+	return typeOf(v)
+}
+
 // Interface ...
 func (v *Value) Interface() interface{} {
+	if v == nil {
+		return nil
+	}
 	if v.ArrayPtr != nil {
-		return v.Array()
+		return arrayToInterface(v)
 	}
 	if v.BoolPtr != nil {
-		return v.Bool()
+		return *v.BoolPtr == 1
 	}
 	if v.StringPtr != nil {
-		return v.String()
+		return *v.StringPtr
 	}
 	if v.IntPtr != nil {
-		return v.Int()
+		return *v.IntPtr
 	}
 	if v.StructPtr != nil {
-		return v.Struct()
+		return structToInterface(v)
 	}
 	panic("Unsupported value type")
 }
 
-// Array ...
-func (v *Value) Array() []interface{} {
+func arrayToInterface(v *Value) []interface{} {
 	result := make([]interface{}, len(*v.ArrayPtr))
 	for i, v := range *v.ArrayPtr {
 		result[i] = v.Interface()
@@ -55,23 +63,7 @@ func (v *Value) Array() []interface{} {
 	return result
 }
 
-// Bool ...
-func (v *Value) Bool() bool {
-	return *v.BoolPtr
-}
-
-// String ...
-func (v *Value) String() string {
-	return *v.StringPtr
-}
-
-// Int ...
-func (v *Value) Int() int {
-	return *v.IntPtr
-}
-
-// Struct ...
-func (v *Value) Struct() map[string]interface{} {
+func structToInterface(v *Value) map[string]interface{} {
 	result := make(map[string]interface{})
 	for _, m := range v.StructPtr.Members {
 		result[m.Name] = m.Value.Interface()
@@ -79,10 +71,89 @@ func (v *Value) Struct() map[string]interface{} {
 	return result
 }
 
+// Array ...
+func (v *Value) Array() []*Value {
+	if v == nil || v.ArrayPtr == nil {
+		return []*Value{}
+	}
+	return *v.ArrayPtr
+}
+
+// Index value of array
+func (v *Value) Index(i int) *Value {
+	arr := v.Array()
+	if len(arr) < i+1 {
+		return nil
+	}
+	return arr[i]
+}
+
+// Bool ...
+func (v *Value) Bool() bool {
+	if v == nil || v.BoolPtr == nil {
+		return false
+	}
+	return *v.BoolPtr == 1
+}
+
+// String ...
+func (v *Value) String() string {
+	if v == nil || v.StringPtr == nil {
+		return ""
+	}
+	return *v.StringPtr
+}
+
+// Int ...
+func (v *Value) Int() int {
+	if v == nil || v.IntPtr == nil {
+		return 0
+	}
+	return *v.IntPtr
+}
+
+// Struct ...
+func (v *Value) Struct() []*StructMember {
+	if v == nil || v.StructPtr == nil {
+		return []*StructMember{}
+	}
+	return v.StructPtr.Members
+}
+
+// Field ...
+func (v *Value) Field(i int) *Value {
+	members := v.Struct()
+	if len(members) < i+1 {
+		return nil
+	}
+	return members[i].Value
+}
+
+// FieldByName ...
+func (v *Value) FieldByName(f string) *Value {
+	for _, m := range v.Struct() {
+		if m.Name == f {
+			return m.Value
+		}
+	}
+	return nil
+}
+
 // Array value
 func Array(vs ...*Value) *Value {
 	return &Value{
 		ArrayPtr: &vs,
+	}
+}
+
+// Bool value
+func Bool(b bool) *Value {
+	var i int
+	if b {
+		i = 1
+	}
+	return &Value{
+		BoolPtr: &i,
 	}
 }
 

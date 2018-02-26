@@ -9,6 +9,7 @@ import (
 type Request interface {
 	Method() string
 	Params() []*Value
+	Param(i int) *Value
 	Write(io.Writer) error
 }
 
@@ -60,6 +61,14 @@ func (r *request) Params() []*Value {
 		values[i] = p.Value
 	}
 	return values
+}
+
+func (r *request) Param(i int) *Value {
+	if r.Parameters == nil || len(*r.Parameters) < i+1 {
+		return nil
+	}
+	params := *r.Parameters
+	return params[i].Value
 }
 
 var header = []byte(`<?xml version="1.0"?>`)
