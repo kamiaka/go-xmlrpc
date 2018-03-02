@@ -52,7 +52,7 @@ func (v *Value) Interface() interface{} {
 	if v.StructPtr != nil {
 		return structToInterface(v)
 	}
-	panic("Unsupported value type")
+	return nil
 }
 
 func arrayToInterface(v *Value) []interface{} {
